@@ -10,12 +10,12 @@ all: unit-test integration-test
 # Run unit tests
 unit-test:
 	@echo "Running unit tests..."
-	go test -v ./rabbitmq/...
+	go test -v ./rabbitmq/... --timeout 5s
 
 # Run integration tests (requires RabbitMQ up)
-integration-test: docker-up
+integration-test:
 	@echo "Running integration tests..."
-	RABBITMQ_URL=$(RABBITMQ_URL) go test -v ./tests/integration/rabbitmq/...
+	RABBITMQ_URL=$(RABBITMQ_URL) go test -v ./tests/integration/rabbitmq/... --timeout 5s
 
 docker-up:
 	@echo "Starting RabbitMQ with docker-compose..."
