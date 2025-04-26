@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.1'
+          cache: true
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Check formatting
+        run: go fmt ./...
+      
+      - name: Run vet
+        run:  go vet ./...
+
+      - name: Run unit tests
+        run: go test -v ./rabbitmq --timeout 5m
+
+      - name: Wait for RabbitMQ to be healthy
+        run: |
+          for i in {1..10}; do
+            if docker inspect --format='{{.State.Health.Status}}' $(docker ps -q --filter name=rabbitmq) | grep -q healthy; then
+              echo "RabbitMQ is healthy!"
+              break
+            fi
+            echo "Waiting for RabbitMQ to be healthy..."
+            sleep 5
+          done
+
+      - name: Run integration tests
+        run: |
+          RABBITMQ_URL=amqp://guest:guest@localhost:5672/ go test -v ./tests/integration/...
