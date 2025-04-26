@@ -46,7 +46,7 @@ jobs:
         run:  go vet ./...
 
       - name: Run unit tests
-        run: go test -v ./rabbitmq --timeout 5m
+        run: make unit-test
 
       - name: Wait for RabbitMQ to be healthy
         run: |
@@ -59,6 +59,5 @@ jobs:
             sleep 5
           done
 
-      - name: Run integration tests
-        run: |
-          RABBITMQ_URL=amqp://guest:guest@localhost:5672/ go test -v ./tests/integration/...
+      - name: Run integration tests for RabbitMQ
+        run: make integration-test

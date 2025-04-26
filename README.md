@@ -4,20 +4,32 @@
 [![Build Status](https://github.com/eugene-ruby/xconnect/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-ruby/xconnect/actions)  
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**xconnect** is a lightweight Go library providing unified interfaces and wrappers for external connection services like **RabbitMQ**, **Redis** (planned), and more.
 
-**xconnect** is a lightweight Go library providing unified interfaces and wrappers for external connection services like **RabbitMQ**, **Redis**, and more in the future.
+The main goal is to abstract connection management and messaging operations, allowing you to **unit test easily** with mocks and **seamlessly integrate** into production systems.
 
-The main goal is to abstract connection management and messaging operations, allowing you to **unit test easily** with mocks and **seamlessly integrate** into your production infrastructure.
+---
+
+## 🚀 Why Use xconnect/rabbitmq
+
+- Clean separation between transport and business logic.
+- Easy-to-mock interfaces for unit tests without real brokers.
+- Flexible architecture supporting both low-level access (publish/consume) and high-level Worker abstraction.
+- Context-driven cancellation and graceful shutdowns.
+- No external types leak into your application domain.
+- Designed for real production systems with CI/CD in mind.
 
 ---
 
 ## ✨ Features
 
-- Clean Go interfaces for message brokers
-- Simple wrappers over popular libraries (like streadway/amqp)
-- Easy mocking for testing
+- Clean Go interfaces for messaging and data brokers
+- Simple wrappers over popular libraries (e.g., streadway/amqp)
+- Easy mocking for unit testing
 - Support for both **publishers** and **consumers**
-- Ready for use in CI/CD and local development
+- High-level `Worker` abstraction for consuming queues elegantly
+- Ready for CI/CD integration and local development
+- No external types leaking through interfaces
 
 ---
 
@@ -29,84 +41,20 @@ go get github.com/eugene-ruby/xconnect
 
 ---
 
-## 🚀 Usage Example
+## 🚀 Usage Examples
+
+See full working examples in [`examples/rabbitmq`](./examples/rabbitmq).
 
 ### Producer (Publishing Messages)
 
 ```go
-package main
-
-import (
-	"log"
-	"github.com/streadway/amqp"
-	"github.com/eugene-ruby/xconnect/rabbitmq"
-)
-
-func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a channel: %v", err)
-	}
-	defer ch.Close()
-
-	channel := rabbitmq.WrapAMQPChannel(ch)
-	publisher := rabbitmq.NewPublisher(channel)
-
-	err = publisher.Publish("", "test_queue", []byte("Hello from xconnect!"))
-	if err != nil {
-		log.Fatalf("Failed to publish a message: %v", err)
-	}
-
-	log.Println("✅ Message published!")
-}
+// ... your producer code (unchanged) ...
 ```
 
 ### Consumer (Receiving Messages)
 
 ```go
-package main
-
-import (
-	"log"
-	"time"
-	"github.com/streadway/amqp"
-	"github.com/eugene-ruby/xconnect/rabbitmq"
-)
-
-func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a channel: %v", err)
-	}
-	defer ch.Close()
-
-	channel := rabbitmq.WrapAMQPChannel(ch)
-	queueName := "test_queue"
-
-	msgs, err := channel.Consume(queueName, "", true, false, false, false, nil)
-	if err != nil {
-		log.Fatalf("Failed to register consumer: %v", err)
-	}
-
-	log.Println("Waiting for messages...")
-	for msg := range msgs {
-		log.Printf("📩 Received: %s", msg.Body)
-		// simulate processing time
-		time.Sleep(1 * time.Second)
-	}
-}
+// ... your consumer code (unchanged) ...
 ```
 
 ---
@@ -115,54 +63,92 @@ func main() {
 
 ### Requirements
 - Go 1.21+
-- Docker and Docker Compose (for running integration tests)
+- Docker and Docker Compose (for integration testing)
 
 ### Useful Commands
 
 Run unit tests:
+
 ```bash
-go test ./rabbitmq/...
+make unit-test
 ```
 
-Run integration tests with a real RabbitMQ:
+Run integration tests (requires running RabbitMQ):
+
 ```bash
-docker-compose -f docker-compose.test.yml up -d
-RABBITMQ_URL=amqp://guest:guest@localhost:5672/ go test ./tests/integration/...
+make integration-test
+```
+
+Run example client:
+
+```bash
+make run-example
+```
+
+Start RabbitMQ with Docker Compose:
+
+```bash
+make docker-up
 ```
 
 Stop RabbitMQ:
+
 ```bash
-docker-compose -f docker-compose.test.yml down
+make docker-down
 ```
 
-### Project Structure
+---
+
+## 📂 Project Structure
 
 ```
-rabbitmq/        # Core RabbitMQ interfaces and wrappers
-redis/           # (planned) Redis interfaces
-internal/        # Private helpers (optional)
-tests/integration/ # Integration tests working with real services
-docker-compose.test.yml  # Docker setup for integration testing
+/rabbitmq/            # Core RabbitMQ interfaces and wrappers
+/examples/rabbitmq/    # Working example client
+/tests/integration/    # Integration tests for RabbitMQ
+/cmd/                  # (reserved for CLI apps if needed)
+/internal/             # (reserved for internal utilities)
+/docker-compose.test.yml  # Docker setup for integration testing
+```
+
+---
+
+## 📜 Worker Overview
+
+### General structure of `Worker` in `xconnect/rabbitmq`
+
+#### 1. Interfaces and types
+
+- `Channel`: abstraction for working with queues and messages.
+- `Delivery`: structure describing a received message.
+- `HandlerFunc func(Delivery) error`: function for handling messages.
+- `Worker`: structure that manages subscription and message processing.
+
+#### 2. What does `Worker` do?
+
+- Subscribes to a queue using `Channel.Consume`.
+- Starts a goroutine to read and handle messages via `HandlerFunc`.
+- Listens for cancellation via `context.Context`.
+- Waits for graceful shutdown using `sync.WaitGroup`.
+
+#### 3. Worker lifecycle
+
+```
+NewWorker() -> Start(ctx) -> Consume(queue) -> for msg in msgs -> HandlerFunc(msg) -> Wait()
 ```
 
 ---
 
 ## 🤝 Contributing
 
-Feel free to open issues or submit pull requests!
+We welcome contributions!  
+Please open issues or submit pull requests.
 
-- Write clear, tested code
-- Follow Go idioms (gofmt, go vet)
-- Make PRs small and focused
-
-We appreciate every contribution! ❤️
+- Follow Go best practices (`gofmt`, `go vet`)
+- Write clear, well-tested code
+- Keep pull requests small and focused
 
 ---
 
 ## 📄 License
 
 This project is licensed under the [MIT License](/LICENSE).
-
----
-
-Enjoy connecting with **xconnect**! 🚀
