@@ -1,8 +1,16 @@
-# xconnect
+# About xConnect
+```bash
+╭──────────────────────────────────────────╮
+│    xconnect: clean abstraction layer      │
+│    for RabbitMQ, Redis and more           │
+╰──────────────────────────────────────────╯
+      ↳ lightweight, testable, production-ready
+```
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/eugene-ruby/xconnect)](https://goreportcard.com/report/github.com/eugene-ruby/xconnect)  
-[![Build Status](https://github.com/eugene-ruby/xconnect/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-ruby/xconnect/actions)  
+[![Go Report Card](https://goreportcard.com/badge/github.com/eugene-ruby/xconnect)](https://goreportcard.com/report/github.com/eugene-ruby/xconnect)
+[![Build Status](https://github.com/eugene-ruby/xconnect/actions/workflows/ci.yml/badge.svg)](https://github.com/eugene-ruby/xconnect/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 
 **xconnect** is a lightweight Go library providing unified interfaces and wrappers for external connection services like **RabbitMQ**, **Redis** (planned), and more.
 
@@ -59,6 +67,51 @@ See full working examples in [`examples/rabbitmq`](./examples/rabbitmq).
 
 ---
 
+## 🧪 Mock Support for Unit Testing
+
+`xconnect` provides ready-to-use mocks for unit testing your applications without requiring a live RabbitMQ server.
+
+- Available under [`rabbitmq/mocks`](./rabbitmq/mocks/).
+- Provides `MockChannel` implementing `rabbitmq.Channel` interface.
+- Useful for testing publishers, workers, and custom logic.
+
+Example:
+
+```go
+import "github.com/eugene-ruby/xconnect/rabbitmq/mocks"
+
+func TestPublish(t *testing.T) {
+    mock := mocks.NewMockChannel()
+    publisher := rabbitmq.NewPublisher(mock)
+
+    err := publisher.Publish(\"\", \"queue\", []byte(\"test message\"))
+    require.NoError(t, err)
+}
+```
+
+✅ No need for real broker  
+✅ Instant feedback during development
+
+---
+
+## 📚 Full Example Applications
+
+- [`examples/rabbitmq`](./examples/rabbitmq) — Basic Producer + Worker example with graceful shutdown.
+- [`examples/app`](./examples/app) — Full example of building an application using Publisher, Worker, and unit tests based on mocks.
+
+```bash
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/ go run ./examples/rabbitmq/
+2025/04/26 16:52:39 [Publisher] Published: message #1
+2025/04/26 16:52:39 [Worker] Received: message #1
+2025/04/26 16:52:40 [Publisher] Published: message #2
+2025/04/26 16:52:40 [Worker] Received: message #2
+2025/04/26 16:52:41 [Publisher] Published: message #3
+2025/04/26 16:52:41 [Worker] Received: message #3
+.....
+```
+
+---
+
 ## 🛠 Local Development
 
 ### Requirements
@@ -102,12 +155,17 @@ make docker-down
 ## 📂 Project Structure
 
 ```
-/rabbitmq/            # Core RabbitMQ interfaces and wrappers
-/examples/rabbitmq/    # Working example client
-/tests/integration/    # Integration tests for RabbitMQ
-/cmd/                  # (reserved for CLI apps if needed)
-/internal/             # (reserved for internal utilities)
-/docker-compose.test.yml  # Docker setup for integration testing
+/rabbitmq/               # Core RabbitMQ interfaces and wrappers
+/rabbitmq/mocks/         # Public mocks for unit testing (MockChannel, etc.)
+/examples/rabbitmq/      # Basic live example (Publisher + Worker + graceful shutdown)
+/examples/app/           # Full application example with unit tests using mocks
+/tests/integration/      # Integration tests for RabbitMQ (real broker tests)
+/cmd/                    # (Reserved for CLI applications if needed)
+/internal/               # (Reserved for internal utilities)
+/docker-compose.test.yml # Docker Compose setup for integration testing
+/go.mod                  # Go module definition
+/go.sum                  # Go module checksum file
+/README.md               # Project documentation
 ```
 
 ---
