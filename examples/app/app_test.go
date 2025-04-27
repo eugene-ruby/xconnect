@@ -21,7 +21,7 @@ func TestApplication_PublishMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, mock.PublishedMessages, 1)
-	require.Equal(t, []byte("hello world"), mock.PublishedMessages[0])
+	require.Equal(t, []byte("hello world"), mock.PublishedMessages[0].Body)
 }
 
 // TestApplication_WorkerReceivesMessage verifies that the Worker can consume and process a message.
