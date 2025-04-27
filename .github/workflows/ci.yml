@@ -47,6 +47,8 @@ jobs:
 
       - name: Run unit tests
         run: make unit-test
+      - name: Run examples app test
+        run: make examples-app-test
 
       - name: Wait for RabbitMQ to be healthy
         run: |

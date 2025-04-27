@@ -12,6 +12,9 @@ unit-test:
 	@echo "Running unit tests..."
 	go test -v ./rabbitmq/... --timeout 5s
 
+examples-app-test:
+	go test -v ./examples/app/... --timeout 10s
+
 # Run integration tests (requires RabbitMQ up)
 integration-test:
 	@echo "Running integration tests..."
