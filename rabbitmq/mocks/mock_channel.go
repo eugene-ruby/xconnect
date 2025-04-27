@@ -4,17 +4,26 @@ import (
 	"github.com/eugene-ruby/xconnect/rabbitmq"
 )
 
+// PublishedMessage represents a captured Publish call in the mock.
+type PublishedMessage struct {
+	Exchange   string
+	RoutingKey string
+	Body       []byte
+}
+
 // MockChannel is a mock implementation of rabbitmq.Channel used for unit tests.
 type MockChannel struct {
-	PublishedMessages [][]byte
+	PublishedMessages []PublishedMessage
 	ConsumeMessages   chan rabbitmq.Delivery
 	ConsumeErr        error
+	PublishErr        error
 }
 
 // NewMockChannel creates a new MockChannel instance.
 func NewMockChannel() *MockChannel {
 	return &MockChannel{
-		ConsumeMessages: make(chan rabbitmq.Delivery),
+		PublishedMessages: make([]PublishedMessage, 0),
+		ConsumeMessages:   make(chan rabbitmq.Delivery, 10),
 	}
 }
 
@@ -23,7 +32,14 @@ func (m *MockChannel) ExchangeDeclare(name, kind string, durable, autoDelete, in
 }
 
 func (m *MockChannel) Publish(exchange, routingKey string, body []byte) error {
-	m.PublishedMessages = append(m.PublishedMessages, body)
+	if m.PublishErr != nil {
+		return m.PublishErr
+	}
+	m.PublishedMessages = append(m.PublishedMessages, PublishedMessage{
+		Exchange:   exchange,
+		RoutingKey: routingKey,
+		Body:       body,
+	})
 	return nil
 }
 
