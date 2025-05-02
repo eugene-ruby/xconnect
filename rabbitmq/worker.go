@@ -1,7 +1,5 @@
 package rabbitmq
 
-// Worker consumes messages from a queue and processes them with a HandlerFunc.
-
 import (
 	"context"
 	"errors"
@@ -18,19 +16,33 @@ type WorkerConfig struct {
 	ConsumerTag string
 	AutoAck     bool
 	Handler     HandlerFunc
+
+	// automatically declare & bind queue before consuming
+	Declare       bool
+	BindRoutingKey string
+	BindExchange   string
 }
 
 // Worker represents a consumer of messages from a queue.
 type Worker struct {
-	config WorkerConfig
+	config  WorkerConfig
 	channel Channel
 	wg      sync.WaitGroup
+}
+
+// DeclareAndBind declares and binds the queue with given parameters.
+func DeclareAndBind(channel Channel, queue, key, exchange string) error {
+	_, err := channel.QueueDeclare(queue, true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	return channel.QueueBind(queue, key, exchange, false, nil)
 }
 
 // NewWorker creates a new Worker with the given Channel and configuration.
 func NewWorker(channel Channel, config WorkerConfig) *Worker {
 	return &Worker{
-		config: config,
+		config:  config,
 		channel: channel,
 	}
 }
@@ -41,6 +53,14 @@ func (w *Worker) Start(ctx context.Context) error {
 		return errors.New("worker: HandlerFunc must be set")
 	}
 
+	// Optional queue declare & bind
+	if w.config.Declare {
+		if err := DeclareAndBind(w.channel, w.config.Queue, w.config.BindRoutingKey, w.config.BindExchange); err != nil {
+			return fmt.Errorf("worker: declare and bind failed: %w", err)
+		}
+	}
+
+	// Start consuming
 	msgs, err := w.channel.Consume(
 		w.config.Queue,
 		w.config.ConsumerTag,

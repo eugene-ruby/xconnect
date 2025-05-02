@@ -84,3 +84,41 @@ func TestWorker_ContextCancellation(t *testing.T) {
 	// No messages, but worker should shut down cleanly
 	worker.Wait()
 }
+
+func TestWorker_Start_Declare_Success(t *testing.T) {
+	msgChan := make(chan Delivery, 1)
+
+	testMsg := Delivery{Body: []byte("ok")}
+	msgChan <- testMsg
+	close(msgChan)
+
+	mock := &mockChannel{
+		messages: msgChan,
+	}
+
+	var handled bool
+
+	worker := NewWorker(mock, WorkerConfig{
+		Queue:           "test_queue",
+		ConsumerTag:     "test_consumer",
+		AutoAck:         true,
+		Declare:         true,
+		BindRoutingKey:  "telegram.send",
+		BindExchange:    "murmapp",
+		Handler: func(d Delivery) error {
+			// assert: обработка сообщения
+			require.Equal(t, testMsg.Body, d.Body)
+			handled = true
+			return nil
+		},
+	})
+
+	ctx := context.Background()
+	err := worker.Start(ctx)
+	require.NoError(t, err)
+
+	worker.Wait()
+
+	// assert: сообщение обработано
+	require.True(t, handled, "handler should have been called")
+}
