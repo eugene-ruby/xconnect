@@ -3,9 +3,9 @@ package mocks_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"github.com/eugene-ruby/xconnect/rabbitmq/mocks"
 	"github.com/eugene-ruby/xconnect/rabbitmq"
+	"github.com/eugene-ruby/xconnect/rabbitmq/mocks"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockChannel_PublishCapture(t *testing.T) {

@@ -99,12 +99,12 @@ func TestWorker_Start_Declare_Success(t *testing.T) {
 	var handled bool
 
 	worker := NewWorker(mock, WorkerConfig{
-		Queue:           "test_queue",
-		ConsumerTag:     "test_consumer",
-		AutoAck:         true,
-		Declare:         true,
-		BindRoutingKey:  "telegram.send",
-		BindExchange:    "murmapp",
+		Queue:          "test_queue",
+		ConsumerTag:    "test_consumer",
+		AutoAck:        true,
+		Declare:        true,
+		BindRoutingKey: "telegram.send",
+		BindExchange:   "murmapp",
 		Handler: func(d Delivery) error {
 			// assert: обработка сообщения
 			require.Equal(t, testMsg.Body, d.Body)

@@ -26,6 +26,16 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,25 +51,28 @@ jobs:
 
       - name: Check formatting
         run: go fmt ./...
-      
+
       - name: Run vet
-        run:  go vet ./...
+        run: go vet ./...
 
       - name: Run unit tests
         run: make unit-test
+
       - name: Run examples app test
         run: make examples-app-test
 
-      - name: Wait for RabbitMQ to be healthy
+      - name: Wait for RabbitMQ and Redis to be healthy
         run: |
           for i in {1..10}; do
-            if docker inspect --format='{{.State.Health.Status}}' $(docker ps -q --filter name=rabbitmq) | grep -q healthy; then
-              echo "RabbitMQ is healthy!"
+            rabbitmq_status=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -q --filter name=rabbitmq))
+            redis_status=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -q --filter name=redis))
+            if [[ "$rabbitmq_status" == "healthy" && "$redis_status" == "healthy" ]]; then
+              echo "✅ Both RabbitMQ and Redis are healthy!"
               break
             fi
-            echo "Waiting for RabbitMQ to be healthy..."
+            echo "⏳ Waiting for services..."
             sleep 5
           done
 
-      - name: Run integration tests for RabbitMQ
+      - name: Run integration tests (RabbitMQ + Redis)
         run: make integration-test

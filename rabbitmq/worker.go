@@ -18,7 +18,7 @@ type WorkerConfig struct {
 	Handler     HandlerFunc
 
 	// automatically declare & bind queue before consuming
-	Declare       bool
+	Declare        bool
 	BindRoutingKey string
 	BindExchange   string
 }

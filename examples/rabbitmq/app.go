@@ -7,17 +7,17 @@ import (
 	"log"
 	"time"
 
-	"github.com/streadway/amqp"
 	"github.com/eugene-ruby/xconnect/rabbitmq"
+	"github.com/streadway/amqp"
 )
 
 // App encapsulates the RabbitMQ connection, channel, publisher, and worker.
 type App struct {
-	conn      *amqp.Connection // Raw AMQP connection
-	rawCh     *amqp.Channel     // Raw AMQP channel
-	channel   rabbitmq.Channel  // Wrapped Channel interface
+	conn      *amqp.Connection    // Raw AMQP connection
+	rawCh     *amqp.Channel       // Raw AMQP channel
+	channel   rabbitmq.Channel    // Wrapped Channel interface
 	publisher *rabbitmq.Publisher // Publisher to send messages
-	worker    *rabbitmq.Worker     // Worker to consume messages
+	worker    *rabbitmq.Worker    // Worker to consume messages
 }
 
 // NewApp initializes the RabbitMQ connection, channel, publisher, and worker.

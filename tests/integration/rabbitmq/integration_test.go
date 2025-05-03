@@ -1,14 +1,14 @@
 package rabbitmq_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
-	"context"
 
+	"github.com/eugene-ruby/xconnect/rabbitmq"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/require"
-	"github.com/eugene-ruby/xconnect/rabbitmq"
 )
 
 func TestIntegration_WrapAMQPChannel(t *testing.T) {

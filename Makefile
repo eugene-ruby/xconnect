@@ -2,6 +2,7 @@
 
 # Default variables
 RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
+REDIS_URL ?= localhost:6379
 
 .PHONY: all unit-test integration-test run-example docker-up docker-down clean
 
@@ -11,6 +12,7 @@ all: unit-test integration-test
 unit-test:
 	@echo "Running unit tests..."
 	go test -v ./rabbitmq/... --timeout 5s
+	go test -v ./redisstore/... --timeout 5s
 
 examples-app-test:
 	go test -v ./examples/app/... --timeout 10s
@@ -18,7 +20,7 @@ examples-app-test:
 # Run integration tests (requires RabbitMQ up)
 integration-test:
 	@echo "Running integration tests..."
-	RABBITMQ_URL=$(RABBITMQ_URL) go test -v ./tests/integration/rabbitmq/... --timeout 5s
+	RABBITMQ_URL=$(RABBITMQ_URL) REDIS_URL=$(REDIS_URL) go test -v ./tests/integration/... --timeout 5s
 
 docker-up:
 	@echo "Starting RabbitMQ with docker-compose..."

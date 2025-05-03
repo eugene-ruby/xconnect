@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/eugene-ruby/xconnect/rabbitmq"
 	"github.com/eugene-ruby/xconnect/rabbitmq/mocks"
+	"github.com/stretchr/testify/require"
 )
 
 // TestApplication_PublishMessage verifies that PublishMessage correctly sends a message to the queue.

@@ -12,7 +12,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 
-**xconnect** is a lightweight Go library providing unified interfaces and wrappers for external connection services like **RabbitMQ**, **Redis** (planned), and more.
+**xconnect** is a lightweight Go library providing unified interfaces and wrappers for external connection services like **RabbitMQ**, **Redis**  and more.
 
 The main goal is to abstract connection management and messaging operations, allowing you to **unit test easily** with mocks and **seamlessly integrate** into production systems.
 
@@ -195,6 +195,78 @@ NewWorker() -> Start(ctx) -> Consume(queue) -> for msg in msgs -> HandlerFunc(ms
 ```
 
 ---
+
+## 🗃 Redis Store Support
+
+The `xconnect/redisstore` package provides a minimal abstraction over Redis to store and retrieve data without exposing any dependency on `go-redis`.
+
+### ✅ Why
+
+- Avoid tight coupling with `go-redis`
+- Use a clean and minimal `Client` interface
+- Inject mocks for testing, or real clients in production
+- Store any serialized format: JSON, protobuf, base64, etc.
+
+---
+
+### 🔧 Usage
+
+```go
+import (
+    "github.com/redis/go-redis/v9"
+    "github.com/eugene-ruby/xconnect/redisstore"
+)
+
+// Real Redis connection
+rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+adapter := redisstore.NewGoRedisAdapter(rdb)
+store := redisstore.New(adapter)
+
+store.Set(ctx, "mykey", "some-data", 10*time.Minute)
+val, _ := store.Get(ctx, "mykey")
+````
+
+---
+
+### 🧪 Unit Testing with Mocks
+
+Use the built-in `MockClient` for unit tests:
+
+```go
+mock := redisstore.NewMockClient()
+store := redisstore.New(mock)
+
+store.Set(ctx, "test", "value", time.Minute)
+val, _ := store.Get(ctx, "test")
+```
+
+---
+
+### ✅ Features
+
+* Minimal `Client` interface:
+
+  ```go
+  type Client interface {
+      Get(ctx context.Context, key string) (string, error)
+      Set(ctx context.Context, key string, value string, ttl time.Duration) error
+  }
+  ```
+* Adapter for `go-redis`
+* Full `Store` abstraction for app-level access
+* MockClient with in-memory map (thread-safe)
+* Integration tests with real Redis (`make integration-test`)
+
+---
+
+### 📁 Related Files
+
+* [`/redisstore/`](./redisstore) — interfaces, adapters, and store logic
+* [`/tests/integration/redisstore`](./tests/integration/redisstore) — Redis integration test
+* [`/examples`](./examples) — coming soon
+
+---
+
 
 ## 🤝 Contributing
 
