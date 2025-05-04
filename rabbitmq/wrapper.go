@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"log"
 	"github.com/streadway/amqp"
 )
 
@@ -54,10 +55,13 @@ func (a *amqpChannelWrapper) Consume(queue, consumer string, autoAck, exclusive,
 			select {
 			case msg, ok := <-rawChan:
 				if !ok {
-					return
+					log.Println("🔚 rawChan closed")
+				return
 				}
-				wrappedChan <- Delivery{Body: msg.Body, RoutingKey: msg.RoutingKey}
-
+				wrappedChan <- Delivery{
+					Body:       msg.Body,
+					RoutingKey: msg.RoutingKey,
+				}
 			case <-cancelNotify:
 				return
 			case <-closeNotify:
@@ -65,6 +69,7 @@ func (a *amqpChannelWrapper) Consume(queue, consumer string, autoAck, exclusive,
 			}
 		}
 	}()
+
 	return wrappedChan, nil
 }
 

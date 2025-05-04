@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"log"
+	"time"
 )
 
 // HandlerFunc defines a function to process incoming messages.
@@ -77,7 +79,9 @@ func (w *Worker) Start(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
+				log.Println("👷 canceling consumer", w.config.ConsumerTag)
 				_ = w.channel.Cancel(w.config.ConsumerTag, false)
+				time.Sleep(200 * time.Millisecond)
 				return
 			case msg, ok := <-msgs:
 				if !ok {
