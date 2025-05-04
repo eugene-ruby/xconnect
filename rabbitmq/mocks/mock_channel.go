@@ -17,6 +17,8 @@ type MockChannel struct {
 	ConsumeMessages   chan rabbitmq.Delivery
 	ConsumeErr        error
 	PublishErr        error
+	CancelCalled bool
+	CancelArgs   []string
 }
 
 // NewMockChannel creates a new MockChannel instance.
@@ -61,3 +63,11 @@ func (m *MockChannel) Consume(queue, consumer string, autoAck, exclusive, noLoca
 func (m *MockChannel) Close() error {
 	return nil
 }
+
+func (m *MockChannel) Cancel(consumer string, noWait bool) error {
+	m.CancelCalled = true
+	m.CancelArgs = append(m.CancelArgs, consumer)
+	return nil
+}
+
+var _ rabbitmq.Channel = (*MockChannel)(nil)

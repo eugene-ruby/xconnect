@@ -65,10 +65,7 @@ func (w *Worker) Start(ctx context.Context) error {
 		w.config.Queue,
 		w.config.ConsumerTag,
 		w.config.AutoAck,
-		false, // exclusive
-		false, // noLocal
-		false, // noWait
-		nil,
+		false, false, false, nil,
 	)
 	if err != nil {
 		return fmt.Errorf("worker: failed to consume: %w", err)
@@ -80,6 +77,7 @@ func (w *Worker) Start(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
+				_ = w.channel.Cancel(w.config.ConsumerTag, false)
 				return
 			case msg, ok := <-msgs:
 				if !ok {

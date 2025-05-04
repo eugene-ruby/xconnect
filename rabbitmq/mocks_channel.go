@@ -9,6 +9,8 @@ type mockChannel struct {
 	closed     bool
 	publishErr error
 	closeErr   error
+	CancelCalled bool
+	CancelArgs   []string
 }
 
 func (m *mockChannel) ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args Table) error {
@@ -39,3 +41,11 @@ func (m *mockChannel) Close() error {
 	m.closed = true
 	return m.closeErr
 }
+
+func (m *mockChannel) Cancel(consumer string, noWait bool) error {
+	m.CancelCalled = true
+	m.CancelArgs = append(m.CancelArgs, consumer)
+	return nil
+}
+
+var _ Channel = (*mockChannel)(nil)

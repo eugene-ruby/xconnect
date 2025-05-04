@@ -10,6 +10,7 @@ type Channel interface {
 	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args Table) (Queue, error)
 	QueueBind(name, key, exchange string, noWait bool, args Table) error
 	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args Table) (<-chan Delivery, error)
+	Cancel(consumer string, noWait bool) error
 	Close() error
 }
 

@@ -56,6 +56,10 @@ func (a *amqpChannelWrapper) Consume(queue, consumer string, autoAck, exclusive,
 	return wrappedChan, nil
 }
 
+func (a *amqpChannelWrapper) Cancel(consumer string, noWait bool) error {
+	return a.raw.Cancel(consumer, noWait)
+}
+
 func (a *amqpChannelWrapper) Close() error {
 	return a.raw.Close()
 }
