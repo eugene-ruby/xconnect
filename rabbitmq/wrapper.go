@@ -46,10 +46,22 @@ func (a *amqpChannelWrapper) Consume(queue, consumer string, autoAck, exclusive,
 	wrappedChan := make(chan Delivery)
 	go func() {
 		defer close(wrappedChan)
-		for msg := range rawChan {
-			wrappedChan <- Delivery{
-				Body:       msg.Body,
-				RoutingKey: msg.RoutingKey,
+
+		cancelNotify := a.raw.NotifyCancel(make(chan string, 1))
+		closeNotify := a.raw.NotifyClose(make(chan *amqp.Error, 1))
+
+		for {
+			select {
+			case msg, ok := <-rawChan:
+				if !ok {
+					return
+				}
+				wrappedChan <- Delivery{Body: msg.Body, RoutingKey: msg.RoutingKey}
+
+			case <-cancelNotify:
+				return
+			case <-closeNotify:
+				return
 			}
 		}
 	}()
